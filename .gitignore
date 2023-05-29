@@ -8,3 +8,4 @@ result
 build
 **/.envrc
 **/.direnv
+npm
