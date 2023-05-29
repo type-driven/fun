@@ -101,6 +101,9 @@ const createBuildOptions = ({
     version: VERSION.toString(),
     description: DESCRIPTION,
     license: "MIT",
+    publishConfig: {
+      "@type-driven:registry": "https://npm.pkg.github.com",
+    },
   },
 });
 
