@@ -8,9 +8,17 @@ import * as E from "../either.ts";
 import { flow, pipe } from "../fn.ts";
 
 // Defaults
+const gitVersion = await new Deno.Command("git", {
+  args: ["describe", "--abbrev=0", "--tags"],
+})
+  .output()
+  .then((out) => new TextDecoder().decode(out.stdout).trim());
+
+const version = parse(gitVersion) ?? parse("0.0.0")!;
 const defualts: [string, string][] = [
   ["NAME", "fun"],
   ["DESCRIPTION", "fun"],
+  ["VERSION", version.toString()],
   ["BUILD_DIR", "npm"],
   ["ENTRYPOINTS", JSON.stringify(["./mod.ts"])],
   ["ADDITIONAL_FILES", JSON.stringify(["README.md", "LICENSE"])],
