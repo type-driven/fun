@@ -104,6 +104,13 @@ const createBuildOptions = ({
     publishConfig: {
       "@type-driven:registry": "https://npm.pkg.github.com",
     },
+    exports: {
+      ".": {
+        import: "./esm/*",
+        require: "./script/*",
+        types: "./types/*",
+      },
+    },
   },
 });
 
