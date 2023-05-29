@@ -1,11 +1,26 @@
 import * as DNT from "https://deno.land/x/dnt@0.21.2/mod.ts";
 import { parse } from "https://deno.land/x/semver@v1.4.0/mod.ts";
 import { join } from "https://deno.land/std@0.146.0/path/mod.ts";
-import * as T from "../task_either.ts";
+import * as T from "../async_either.ts";
 import * as D from "../decoder.ts";
 import * as A from "../array.ts";
 import * as E from "../either.ts";
-import { flow, pipe } from "../fns.ts";
+import { flow, pipe } from "../fn.ts";
+
+// Defaults
+const defualts: [string, string][] = [
+  ["NAME", "fun"],
+  ["DESCRIPTION", "fun"],
+  ["BUILD_DIR", "npm"],
+  ["ENTRYPOINTS", JSON.stringify(["./mod.ts"])],
+  ["ADDITIONAL_FILES", JSON.stringify(["README.md", "LICENSE"])],
+];
+
+defualts.forEach(([key, value]) => {
+  if (!Deno.env.has(key)) {
+    Deno.env.set(key, value);
+  }
+});
 
 // Environment
 const semver = pipe(
@@ -15,7 +30,7 @@ const semver = pipe(
     return semVer === null
       ? D.failure(i, "Semantic Version")
       : D.success(semVer);
-  }),
+  })
 );
 
 const Env = D.struct({
@@ -27,30 +42,31 @@ const Env = D.struct({
   ADDITIONAL_FILES: D.json(D.array(D.string)),
 });
 
-type Env = D.TypeOf<typeof Env>;
+type Env = typeof Env extends D.Decoder<infer I, infer O> ? O : never;
 
 // Errors
 type BuildError = { message: string; context: Record<string, unknown> };
 
 const buildError = (
   message: string,
-  context: Record<string, unknown> = {},
+  context: Record<string, unknown> = {}
 ): BuildError => ({ message, context });
 
 const printBuildError = ({ message, context }: BuildError) => {
   let msg = `BUILD ERROR: ${message}\n`;
-  msg += Object
-    .entries(context)
+  msg += Object.entries(context)
     .map(([key, value]) => {
-      const val = typeof value === "string"
-        ? value
-        : value instanceof Error
-        ? value
-        : typeof value === "object" && value !== null &&
+      const val =
+        typeof value === "string"
+          ? value
+          : value instanceof Error
+          ? value
+          : typeof value === "object" &&
+            value !== null &&
             Object.hasOwn(value, "toString") &&
             typeof value.toString === "function"
-        ? value.toString()
-        : JSON.stringify(value, null, 2);
+          ? value.toString()
+          : JSON.stringify(value, null, 2);
       return `Context - ${key}\n${val}`;
     })
     .join("\n");
@@ -58,9 +74,13 @@ const printBuildError = ({ message, context }: BuildError) => {
 };
 
 // Functions
-const createBuildOptions = (
-  { NAME, DESCRIPTION, BUILD_DIR, VERSION, ENTRYPOINTS }: Env,
-): DNT.BuildOptions => ({
+const createBuildOptions = ({
+  NAME,
+  DESCRIPTION,
+  BUILD_DIR,
+  VERSION,
+  ENTRYPOINTS,
+}: Env): DNT.BuildOptions => ({
   entryPoints: ENTRYPOINTS.slice(),
   outDir: BUILD_DIR,
   typeCheck: false,
@@ -76,39 +96,35 @@ const createBuildOptions = (
   },
 });
 
-const getEnv = T.tryCatch(
-  Deno.env.toObject,
-  (err, args) => buildError("Unable to get environment.", { err, args }),
+const getEnv = T.tryCatch(Deno.env.toObject, (err, args) =>
+  buildError("Unable to get environment.", { err, args })
 )();
 
 const parseEnv = flow(
   Env,
   D.extract,
   E.mapLeft((err) => buildError("Unable to parse environment.", { err })),
-  T.fromEither,
+  T.fromEither
 );
 
-const emptyDir = T.tryCatch(
-  DNT.emptyDir,
-  (err, args) => buildError("Unable to empty build directory.", { err, args }),
+const emptyDir = T.tryCatch(DNT.emptyDir, (err, args) =>
+  buildError("Unable to empty build directory.", { err, args })
 );
 
-const build = T.tryCatch(
-  DNT.build,
-  (err, args) => buildError("Unable to build node package.", { err, args }),
+const build = T.tryCatch(DNT.build, (err, args) =>
+  buildError("Unable to build node package.", { err, args })
 );
 
-const copyFile = T.tryCatch(
-  Deno.copyFile,
-  (err, args) => buildError("Unable to copy file.", { err, args }),
+const copyFile = T.tryCatch(Deno.copyFile, (err, args) =>
+  buildError("Unable to copy file.", { err, args })
 );
 
-const traverse = A.traverse(T.Applicative);
+const traverse = A.traverse(T.MonadAsyncEitherParallel);
 
 const copy = ({ BUILD_DIR, ADDITIONAL_FILES }: Env) =>
   pipe(
     ADDITIONAL_FILES,
-    traverse((file) => copyFile(file, join(BUILD_DIR, file))),
+    traverse((file) => copyFile(file, join(BUILD_DIR, file)))
   );
 
 const printComplete = (env: Env) =>
@@ -121,10 +137,10 @@ export const run = pipe(
   T.chainFirst((env) => emptyDir(env.BUILD_DIR)),
   T.chainFirst((env) => build(createBuildOptions(env))),
   T.chainFirst(copy),
-  T.fold(
+  T.match(
     flow(printBuildError, console.error),
-    flow(printComplete, console.log),
-  ),
+    flow(printComplete, console.log)
+  )
 );
 
 await run();
