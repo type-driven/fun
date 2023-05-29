@@ -56,7 +56,6 @@ module at the `HEAD` of the `main` branch can be found here:
 - [const.ts](https://doc.deno.land/https://raw.githubusercontent.com/baetheus/fun/main/const.ts)
 - [contravariant.ts](https://doc.deno.land/https://raw.githubusercontent.com/baetheus/fun/main/contravariant.ts)
 - [datum.ts](https://doc.deno.land/https://raw.githubusercontent.com/baetheus/fun/main/datum.ts)
-- [decode_error.ts](https://doc.deno.land/https://raw.githubusercontent.com/baetheus/fun/main/decode_error.ts)
 - [decoder.ts](https://doc.deno.land/https://raw.githubusercontent.com/baetheus/fun/main/decoder.ts)
 - [either.ts](https://doc.deno.land/https://raw.githubusercontent.com/baetheus/fun/main/either.ts)
 - [eq.ts](https://doc.deno.land/https://raw.githubusercontent.com/baetheus/fun/main/eq.ts)
@@ -112,7 +111,7 @@ maintainers have to write those patches themselves).
 ## Versions
 
 | Version | Deno Release                                                  | TypeScript Version                                                   |
-| ------- | ------------------------------------------------------------- | -------------------------------------------------------------------- |
+|---------|---------------------------------------------------------------|----------------------------------------------------------------------|
 | 1.0.0   | [1.9.2](https://github.com/denoland/deno/releases/tag/v1.9.2) | [4.2.2](https://github.com/microsoft/TypeScript/releases/tag/v4.2.2) |
 
 ## History
