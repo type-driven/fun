@@ -20,7 +20,8 @@ import * as A from "./async.ts";
 import * as P from "./promise.ts";
 import { handleThrow, identity, pipe } from "./fn.ts";
 import { resolve } from "./promise.ts";
-
+import { bind as bind_ } from "./chain.ts";
+import { bindTo as bindTo_ } from "./functor.ts";
 /**
  * The AsyncEither type can best be thought of as an asynchronous function that
  * returns an `Either`. ie. `async () => Promise<Either<B, A>>`. This
@@ -195,9 +196,11 @@ export function throwError<A = never, B = never>(b: B): AsyncEither<B, A> {
  * @example
  * ```ts
  * import * as AE from "./async_either.ts";
- * import {  } from "./fn.ts";
+ * import { flow } from "./fn.ts";
  *
- * const work = f
+ * const work = flow(AE.bimap((x: string) => x.length, (x: number) => x * 2));
+ * const left = await work(AE.left("Error"))(); // Left(5)
+ * const result = await work(AE.right(1))(); // Right(2)
  * ```
  *
  * @since 2.0.0
@@ -396,17 +399,17 @@ export function alt<I, J>(
  *
  * ```ts
  * import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
- * import * as TE from "./async_either.ts";
- * import * as T from "./async.ts";
+ * import * as AE from "./async_either.ts";
+ * import * as A from "./async.ts";
  * import { flow, identity } from "./fn.ts";
  *
  * const hello = flow(
- *   TE.match(() => "World", identity),
+ *   AE.match(() => "World", identity),
  *   A.map((name) => `Hello ${name}!`),
  * );
  *
- * assertEquals(await hello(TE.right("Functional!"))(), "Hello Functional!!");
- * assertEquals(await hello(TE.left(Error))(), "Hello World!");
+ * assertEquals(await hello(AE.right("Functional!"))(), "Hello Functional!!");
+ * assertEquals(await hello(AE.left(Error))(), "Hello World!");
  * ```
  *
  * @since 2.0.0
@@ -445,3 +448,9 @@ export const MonadAsyncEitherSequential: Monad<KindAsyncEither> = {
   join,
   chain,
 };
+
+export const Do = <A>() => of<A>(<A> {});
+
+export const bind = bind_(MonadAsyncEitherSequential);
+
+export const bindTo = bindTo_(MonadAsyncEitherSequential);
